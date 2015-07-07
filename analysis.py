@@ -4,6 +4,7 @@
 # Copyright © 2015 Martin Ueding <dev@martin-ueding.de>
 
 import argparse
+import datetime
 import mailbox
 import re
 import sys
@@ -119,6 +120,7 @@ def main():
     mac_ranges = compute_ranges(parsed)
 
     for mac, ranges in mac_ranges.items():
+        length = datetime.timedelta()
         print()
         print(mac)
         for range in ranges:
@@ -126,6 +128,10 @@ def main():
             end = range[1]
             duration = end - start
             print('- {} → {} ({})'. format(start, end, duration))
+
+            length += duration
+
+        print('Total time used: {}'.format(length))
 
 
 
