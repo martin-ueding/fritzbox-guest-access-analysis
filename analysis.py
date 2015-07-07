@@ -53,11 +53,9 @@ def get_all_pairs(mbox_filename):
 
     return unique
 
-def main():
-    options = _parse_args()
+def parse_pairs(pairs):
     patterns = get_patterns()
-    pairs = get_all_pairs(options.mbox)
-
+    result = []
     for date, event in pairs:
         matched = False
 
@@ -67,12 +65,69 @@ def main():
             if match:
                 print(match.groupdict())
                 matched = True
+                result.append((date, match.groupdict()))
                 break
 
 
         if not matched:
             print('Could not match:', event)
             sys.exit(1)
+
+    return result
+
+def compute_ranges(parsed):
+    changes = {}
+
+    for date, event in parsed:
+        print(date, event)
+
+        mac = event['mac']
+        action = event['action']
+
+        if mac not in changes:
+            changes[mac] = []
+
+        changes[mac].append((date, action == 'angemeldet'))
+
+    ranges = {}
+
+    for mac, events in changes.items():
+        print(mac)
+        changes[mac].sort()
+        ranges[mac] = []
+
+        logged_in = False
+        last_login = None
+
+        for date, logging_in in changes[mac]:
+            if logging_in:
+                if not logged_in:
+                    logged_in = True
+                    last_login = date
+            else:
+                logged_in = False
+                ranges[mac].append((last_login, date))
+
+    return ranges
+
+
+def main():
+    options = _parse_args()
+    pairs = get_all_pairs(options.mbox)
+
+    parsed = parse_pairs(pairs)
+    mac_ranges = compute_ranges(parsed)
+
+    for mac, ranges in mac_ranges.items():
+        print()
+        print(mac)
+        for range in ranges:
+            start = range[0]
+            end = range[1]
+            duration = end - start
+            print('- {} → {} ({})'. format(start, end, duration))
+
+
 
 def _parse_args():
     '''
